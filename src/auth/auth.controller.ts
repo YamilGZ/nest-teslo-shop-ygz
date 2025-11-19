@@ -81,7 +81,7 @@ export class AuthController {
 
   @Get('check-status')
   @Auth()
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Verificar estado de autenticación',
     description: 'Verifica el token JWT y retorna la información del usuario autenticado con un nuevo token.'
@@ -116,8 +116,8 @@ export class AuthController {
   }
 
   @Get('private')
-  @UseGuards(AuthGuard())
-  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Ruta privada de prueba',
     description: 'Ruta de ejemplo que requiere autenticación. Muestra información del usuario autenticado.'
@@ -144,8 +144,8 @@ export class AuthController {
 
   @Get('private2')
   @RoleProtected( ValidRoles.superUser )
-  @UseGuards(AuthGuard(), UserRoleGuard)
-  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), UserRoleGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Ruta privada con rol super-user',
     description: 'Ruta de ejemplo que requiere autenticación y rol de super-user.'
@@ -164,7 +164,7 @@ export class AuthController {
 
   @Get('private3')
   @Auth(ValidRoles.superUser)
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Ruta privada con rol super-user (decorador Auth)',
     description: 'Ruta de ejemplo usando el decorador @Auth() que requiere rol de super-user.'

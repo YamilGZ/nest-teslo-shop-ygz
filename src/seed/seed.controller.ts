@@ -2,7 +2,7 @@ import { Controller, Get, Logger } from '@nestjs/common';
 import { SeedService } from './seed.service';
 import { Auth } from 'src/auth/decorators';
 import { ValidRoles } from 'src/auth/interfaces';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Seed - Poblado de Base de Datos')
 @Controller('seed')
@@ -12,7 +12,8 @@ export class SeedController {
   constructor(private readonly seedService: SeedService) {}
 
   @Get()
-  //@Auth(ValidRoles.superUser)
+  @Auth(ValidRoles.admin, ValidRoles.superUser)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Ejecutar seed de base de datos',
     description: 'Ejecuta el seed que limpia la base de datos y la puebla con datos de ejemplo. Crea 2 usuarios de prueba y 50 productos de ejemplo con diferentes categorías (men, women, kid, unisex).'
@@ -26,6 +27,8 @@ export class SeedController {
       }
     }
   })
+  @ApiResponse({ status: 401, description: 'No autenticado' })
+  @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere admin o super-user' })
   @ApiResponse({ status: 500, description: 'Error al ejecutar el seed' })
   async executeSeed() {
     this.logger.log(`[SEED] Iniciando ejecución de seed`);

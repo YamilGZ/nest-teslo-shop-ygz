@@ -18,18 +18,18 @@ async function bootstrap() {
 
    const config = new DocumentBuilder()
     .setTitle('Teslo RESTFul API')
-    .setDescription('API REST para la gestión de productos de Teslo Shop. Incluye autenticación JWT, gestión de productos, subida de imágenes y sistema de roles.')
+    .setDescription('API REST para la gestión de productos de Teslo Shop. Incluye autenticación JWT, gestión de productos, subida de imágenes y sistema de roles.\n\n**Instrucciones de uso:**\n1. Primero registra un usuario o inicia sesión con las credenciales del seed (test1@google.com / Abc123)\n2. Copia el token JWT de la respuesta\n3. Haz clic en el botón "Authorize" (🔒) arriba a la derecha\n4. Pega el token en el campo "Value" (sin la palabra "Bearer")\n5. Haz clic en "Authorize" y luego "Close"\n6. Ahora puedes usar todos los endpoints protegidos')
     .setVersion('1.0.0')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Ingresa el token JWT',
+        name: 'Authorization',
+        description: 'Ingresa el token JWT obtenido del endpoint /api/auth/login. Solo pega el token, Swagger agregará automáticamente "Bearer " al inicio.',
         in: 'header',
       },
-      'JWT-auth', // Este nombre se usará en el decorador @ApiBearerAuth('JWT-auth')
+      'JWT-auth',
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);

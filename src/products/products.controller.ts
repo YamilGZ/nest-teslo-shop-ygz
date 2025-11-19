@@ -7,31 +7,47 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
 import { Auth, GetUser } from 'src/auth/decorators';
 import { User } from 'src/auth/entities/user.entity';
+import { ValidRoles } from 'src/auth/interfaces';
 import { Product } from './entities';
 
 @ApiTags('Products - Gestión de Productos')
 @Controller('products')
 @Auth()
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 export class ProductsController {
   private readonly logger = new Logger(ProductsController.name);
 
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @Auth()
+  @Auth(ValidRoles.admin, ValidRoles.superUser)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Crear un nuevo producto',
-    description: 'Crea un nuevo producto en el sistema. Requiere autenticación. El slug se genera automáticamente si no se proporciona.'
+    description: 'Crea un nuevo producto en el sistema. **Requiere rol de admin o super-user.** El slug se genera automáticamente si no se proporciona. Ejemplo de uso: Usa el token JWT de un usuario con rol admin o super-user.'
   })
   @ApiResponse({ 
     status: 201, 
     description: 'Producto creado exitosamente', 
-    type: Product
+    type: Product,
+    schema: {
+      example: {
+        id: 'cd533345-f1f3-48c9-a62e-7dc2da50c8f8',
+        title: "Men's Chill Crew Neck Sweatshirt",
+        price: 75,
+        description: "Introducing the Tesla Chill Collection. The Men's Chill Crew Neck Sweatshirt has a premium, heavyweight exterior and soft fleece interior for comfort in any season.",
+        slug: 'mens_chill_crew_neck_sweatshirt',
+        stock: 7,
+        sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+        gender: 'men',
+        tags: ['sweatshirt'],
+        images: []
+      }
+    }
   })
   @ApiResponse({ status: 400, description: 'Error de validación o título/slug duplicado' })
   @ApiResponse({ status: 401, description: 'No autenticado' })
-  @ApiResponse({ status: 403, description: 'Token inválido' })
+  @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere admin o super-user' })
   async create(
     @Body() createProductDto: CreateProductDto,
     @GetUser() user: User,
@@ -134,9 +150,11 @@ export class ProductsController {
   }
 
   @Patch(':id')
+  @Auth(ValidRoles.admin, ValidRoles.superUser)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Actualizar un producto',
-    description: 'Actualiza parcialmente un producto existente. Solo se actualizan los campos proporcionados.'
+    description: 'Actualiza parcialmente un producto existente. **Requiere rol de admin o super-user.** Solo se actualizan los campos proporcionados.'
   })
   @ApiParam({ 
     name: 'id', 
@@ -151,6 +169,7 @@ export class ProductsController {
   @ApiResponse({ status: 400, description: 'Error de validación' })
   @ApiResponse({ status: 404, description: 'Producto no encontrado' })
   @ApiResponse({ status: 401, description: 'No autenticado' })
+  @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere admin o super-user' })
   async update(
     @Param('id') id: string, 
     @Body() updateProductDto: UpdateProductDto,
@@ -168,9 +187,11 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @Auth(ValidRoles.admin, ValidRoles.superUser)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ 
     summary: 'Eliminar un producto',
-    description: 'Elimina un producto del sistema. También elimina las imágenes asociadas.'
+    description: 'Elimina un producto del sistema. **Requiere rol de admin o super-user.** También elimina las imágenes asociadas.'
   })
   @ApiParam({ 
     name: 'id', 
@@ -188,6 +209,7 @@ export class ProductsController {
   })
   @ApiResponse({ status: 404, description: 'Producto no encontrado' })
   @ApiResponse({ status: 401, description: 'No autenticado' })
+  @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere admin o super-user' })
   async remove(@Param('id') id: string) {
     this.logger.log(`[DELETE] Eliminando producto - ID: ${id}`);
     try {

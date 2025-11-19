@@ -5,8 +5,8 @@ import { IsEmail, IsString, Matches, MaxLength, MinLength } from "class-validato
 export class CreateUserDto {
 
     @ApiProperty({
-        description: 'Email del usuario',
-        example: 'usuario@ejemplo.com',
+        description: 'Email del usuario (debe ser único)',
+        example: 'nuevo.usuario@ejemplo.com',
         uniqueItems: true
     })
     @IsString()
@@ -30,7 +30,7 @@ export class CreateUserDto {
 
     @ApiProperty({
         description: 'Nombre completo del usuario',
-        example: 'Juan Pérez',
+        example: 'Juan Pérez García',
         minLength: 1
     })
     @IsString()

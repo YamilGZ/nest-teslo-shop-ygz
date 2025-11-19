@@ -25,8 +25,8 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto, user: User) {
-    
     try {
+      this.logger.debug(`[CREATE] Creando producto - Título: ${createProductDto.title}, User ID: ${user.id}`);
       const { images = [], ...productDetails } = createProductDto;
 
       const product = this.productRepository.create({
@@ -36,16 +36,19 @@ export class ProductsService {
       });
 
       await this.productRepository.save(product);
+      this.logger.log(`[CREATE] Producto guardado en BD - ID: ${product.id}, Título: ${product.title}, Imágenes: ${images.length}`);
 
       return {...product, images};
 
     } catch (error) {
+      this.logger.error(`[CREATE] Error al crear producto - Título: ${createProductDto.title}`, error.stack);
       this.handleDBExceptions(error);
     }
   }
 
   async findAll( paginationDto: PaginationDto ) {
     const { limit = 10, offset = 0 } = paginationDto;
+    this.logger.debug(`[FIND-ALL] Buscando productos - Limit: ${limit}, Offset: ${offset}`);
 
     const products = await this.productRepository.find({
       take: limit,
@@ -55,6 +58,8 @@ export class ProductsService {
       }
     })
 
+    this.logger.log(`[FIND-ALL] Productos encontrados: ${products.length}`);
+
     return products.map( ( product ) => ({
       ...product,
       images: product.images?.map( img => img.url )
@@ -63,12 +68,15 @@ export class ProductsService {
   }
 
   async findOne(term: string) {
+    this.logger.debug(`[FIND-ONE] Buscando producto - Término: ${term}, Es UUID: ${isUUID(term)}`);
 
     let product: Product | null;
 
     if ( isUUID(term) ) {
+      this.logger.debug(`[FIND-ONE] Buscando por ID`);
       product = await this.productRepository.findOneBy({ id: term });
     } else {
+      this.logger.debug(`[FIND-ONE] Buscando por título o slug`);
       const queryBuilder = this.productRepository.createQueryBuilder('prod'); 
       product = await queryBuilder
         .where('UPPER(title) =:title or slug =:slug', {
@@ -79,10 +87,12 @@ export class ProductsService {
         .getOne();
     }
 
-
-    if ( !product ) 
+    if ( !product ) {
+      this.logger.warn(`[FIND-ONE] Producto no encontrado - Término: ${term}`);
       throw new NotFoundException(`Product with ${ term } not found`);
+    }
 
+    this.logger.log(`[FIND-ONE] Producto encontrado - ID: ${product.id}, Título: ${product.title}`);
     return product;
   }
 
@@ -95,12 +105,15 @@ export class ProductsService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto, user: User) {
-
+    this.logger.debug(`[UPDATE] Actualizando producto - ID: ${id}, User ID: ${user.id}`);
     const { images = [], ...toUpdate } = updateProductDto;
 
     const product = await this.productRepository.preload({ id, ...toUpdate });
 
-    if ( !product ) throw new NotFoundException(`Product with id: ${ id } not found`);
+    if ( !product ) {
+      this.logger.warn(`[UPDATE] Producto no encontrado - ID: ${id}`);
+      throw new NotFoundException(`Product with id: ${ id } not found`);
+    }
 
      // Create query runner
      const queryRunner = this.dataSource.createQueryRunner();
@@ -108,7 +121,8 @@ export class ProductsService {
      await queryRunner.startTransaction();
 
     try {
-      if( images ) {
+      if( images && images.length > 0 ) {
+        this.logger.debug(`[UPDATE] Actualizando ${images.length} imágenes`);
         await queryRunner.manager.delete( ProductImage, { product: { id } });
 
         product.images = images.map( 
@@ -116,9 +130,9 @@ export class ProductsService {
         )
       }
       
-      // await this.productRepository.save( product );
       product.user = user;
       await queryRunner.manager.save( product );
+      this.logger.log(`[UPDATE] Producto actualizado en BD - ID: ${id}`);
 
       await queryRunner.commitTransaction();
       await queryRunner.release();
@@ -126,6 +140,7 @@ export class ProductsService {
       return this.findOnePlain( id );
       
     } catch (error) {
+      this.logger.error(`[UPDATE] Error al actualizar producto - ID: ${id}`, error.stack);
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
       this.handleDBExceptions(error);
@@ -134,19 +149,21 @@ export class ProductsService {
   }
 
   async remove(id: string) {
+    this.logger.debug(`[DELETE] Eliminando producto - ID: ${id}`);
     const product = await this.findOne( id );
     await this.productRepository.remove( product );
+    this.logger.log(`[DELETE] Producto eliminado de BD - ID: ${id}, Título: ${product.title}`);
   }
 
   private handleDBExceptions( error: any ) {
-
-    if ( error.code === '23505' )
+    if ( error.code === '23505' ) {
+      this.logger.error(`[DB-ERROR] Violación de constraint único - Code: ${error.code}, Detail: ${error.detail}`);
       throw new BadRequestException(error.detail);
+    }
     
-    this.logger.error(error)
-    // console.log(error)
+    this.logger.error(`[DB-ERROR] Error inesperado en BD`, error.stack);
+    console.error('Error completo:', error);
     throw new InternalServerErrorException('Unexpected error, check server logs');
-
   }
 
   async deleteAllProducts() {

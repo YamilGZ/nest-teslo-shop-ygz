@@ -434,13 +434,6 @@ Authorization: Bearer <token>
 - Revisa los permisos de escritura
 - Asegúrate de que el archivo sea una imagen válida (jpg, jpeg, png, gif)
 
-## 📄 Licencia
-
-Este proyecto es privado y está bajo licencia UNLICENSED.
-
-## 👨‍💻 Autor
-
-Desarrollado como parte del curso de NestJS - Desarrollo Backend.
 
 ---
 
